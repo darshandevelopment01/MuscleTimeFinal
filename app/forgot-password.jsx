@@ -1,22 +1,21 @@
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 
 export default function ForgotPassword() {
   const router = useRouter();
-
+  const API_URL = "https://muscletime-backend.vercel.app/api";
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -30,34 +29,97 @@ export default function ForgotPassword() {
     return regex.test(pass);
   };
 
-  const handlePhoneSubmit = () => {
+  // const handlePhoneSubmit = () => {
+  //   setError("");
+
+  //   if (!phone || phone.length < 10) {
+  //     setError("Please enter valid phone number");
+  //     return;
+  //   }
+
+  //   setStep(2);
+  // };
+const handlePhoneSubmit = async () => {
+  try {
     setError("");
 
     if (!phone || phone.length < 10) {
-      setError("Please enter valid phone number");
+      setError("Please enter valid phone or email");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier: phone,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || "Failed to send OTP");
       return;
     }
 
     setStep(2);
-  };
 
-  const handleOtpSubmit = () => {
-    setError("");
+  } catch (err) {
+    console.log(err);
+    setError("Network error");
+  }
+};
+  // const handleOtpSubmit = () => {
+  //   setError("");
 
-    if (otp.length !== 4) {
-      setError("Enter valid 4-digit OTP");
-      return;
-    }
+  //   if (otp.length !== 4) {
+  //     setError("Enter valid 4-digit OTP");
+  //     return;
+  //   }
 
-    if (otp !== "1234") {
-      setError("Invalid OTP");
-      return;
-    }
+  //   if (otp !== "1234") {
+  //     setError("Invalid OTP");
+  //     return;
+  //   }
 
-    setStep(3);
-  };
+  //   setStep(3);
+  // };
+const handleOtpSubmit = () => {
+  setError("");
 
-  const handlePasswordSubmit = () => {
+  if (otp.length !== 6) {
+    setError("Enter valid 6-digit OTP");
+    return;
+  }
+
+  // setStep(3);
+  router.push({
+    pathname: "/reset-password",
+    params: { identifier: phone, otp: otp },
+  });
+};
+  // const handlePasswordSubmit = () => {
+  //   setError("");
+
+  //   if (!validatePassword(password)) {
+  //     setError(
+  //       "Password must be 7+ chars, include 1 capital, 1 number & 1 special character."
+  //     );
+  //     return;
+  //   }
+
+  //   if (password !== confirm) {
+  //     setError("Passwords do not match");
+  //     return;
+  //   }
+
+  //   router.replace("/");
+  // };
+const handlePasswordSubmit = async () => {
+  try {
     setError("");
 
     if (!validatePassword(password)) {
@@ -72,9 +134,32 @@ export default function ForgotPassword() {
       return;
     }
 
-    router.replace("/");
-  };
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier: phone,
+        otp: otp,
+        newPassword: password,
+      }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || "Failed to reset password");
+      return;
+    }
+
+    router.replace("/");
+
+  } catch (err) {
+    console.log(err);
+    setError("Network error");
+  }
+};
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -116,7 +201,7 @@ export default function ForgotPassword() {
             {step === 2 && (
               <>
                 <Text style={styles.subtitle}>
-                  Enter 4-digit OTP sent to your phone
+                  Enter 6-digit OTP sent to your phone
                 </Text>
 
                 <View style={styles.inputBox}>
@@ -124,7 +209,7 @@ export default function ForgotPassword() {
                     placeholder="Enter OTP"
                     placeholderTextColor="#888"
                     keyboardType="number-pad"
-                    maxLength={4}
+                    maxLength={6}
                     style={styles.input}
                     value={otp}
                     onChangeText={setOtp}

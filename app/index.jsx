@@ -1,22 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
-
 export default function LoginScreen() {
+  const API_URL = "https://muscletime-backend.vercel.app/api";
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -24,7 +23,34 @@ export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  // const handleLogin = () => {
+  //   setError("");
+
+  //   if (!email || !password) {
+  //     setError("Please enter email and password");
+  //     return;
+  //   }
+
+  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  //   if (!emailRegex.test(email)) {
+  //     setError("Please enter a valid email address");
+  //     return;
+  //   }
+
+  //   if (password.length < 4) {
+  //     setError("Password must be at least 4 characters");
+  //     return;
+  //   }
+
+  //   if (email === "admin@muscletime.com" && password === "1234") {
+  //     router.replace("/(tabs)/enquiry");
+  //   } else {
+  //     setError("Invalid email or password");
+  //   }
+  // };
+const handleLogin = async () => {
+  try {
     setError("");
 
     if (!email || !password) {
@@ -44,13 +70,34 @@ export default function LoginScreen() {
       return;
     }
 
-    if (email === "admin@muscletime.com" && password === "1234") {
-      router.replace("/(tabs)/enquiry");
-    } else {
-      setError("Invalid email or password");
-    }
-  };
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier: email,
+        password: password,
+      }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || "Login failed");
+      return;
+    }
+
+    console.log("Login success:", data.user);
+
+    // Navigate after login
+    router.replace("/(tabs)/enquiry");
+
+  } catch (error) {
+    console.log(error);
+    setError("Network error. Please try again.");
+  }
+};
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}

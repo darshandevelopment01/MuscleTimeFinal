@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
+
 
 export default function ResetPassword() {
   const router = useRouter();
-
+  const API_URL = "https://muscletime-backend.vercel.app/api";
+  const { identifier, otp } = useLocalSearchParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +26,25 @@ export default function ResetPassword() {
     return regex.test(pass);
   };
 
-  const handleReset = () => {
+  // const handleReset = () => {
+  //   setError("");
+
+  //   if (!validatePassword(password)) {
+  //     setError(
+  //       "Password must be 7+ chars, include 1 capital, 1 number & 1 special character."
+  //     );
+  //     return;
+  //   }
+
+  //   if (password !== confirm) {
+  //     setError("Passwords do not match");
+  //     return;
+  //   }
+
+  //   router.replace("/");
+  // };
+const handleReset = async () => {
+  try {
     setError("");
 
     if (!validatePassword(password)) {
@@ -39,9 +59,34 @@ export default function ResetPassword() {
       return;
     }
 
-    router.replace("/");
-  };
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier: identifier,
+        otp: otp,
+        newPassword: password,
+      }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.message || "Failed to reset password");
+      return;
+    }
+
+    alert("Password reset successful");
+
+    router.replace("/");
+
+  } catch (err) {
+    console.log(err);
+    setError("Network error. Please try again.");
+  }
+};
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
