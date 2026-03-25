@@ -1,17 +1,16 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { Feather, Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Modal, TextInput } from "react-native";
 
 const onDateChange = (event, selectedDate) => {
   setShowDatePicker(false);
@@ -32,43 +31,20 @@ const formatTime = (time) => {
   if (!time) return "--:--";
   return time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
-const API_URL = "https://muscletime-backend.vercel.app/api";
+
 export default function MemberDetails() {
   const router = useRouter();
   const member = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState("profile");
   const [followModalVisible, setFollowModalVisible] = useState(false);
-  const isActive = memberData?.status === "active";
+  const isActive = member.status === "active";
 
   const [followDate, setFollowDate] = useState(null);
   const [followTime, setFollowTime] = useState(null);
 
-  const [memberData, setMemberData] = useState(null);
-
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  useEffect(() => {
-  fetchMember();
-}, []);
-const fetchMember = async () => {
-  try {
-    const token = await AsyncStorage.getItem("token");
 
-    const res = await fetch(`${API_URL}/members/${member.id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      setMemberData(data.data);
-    }
-  } catch (err) {
-    console.log(err);
-  }
-};
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* HEADER */}
@@ -84,18 +60,11 @@ const fetchMember = async () => {
         <View style={styles.orangeBanner} />
 
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-  {memberData?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")}
-</Text>
+          <Text style={styles.avatarText}>{member.initials}</Text>
         </View>
 
         <View style={styles.profileInfo}>
-          <Text style={styles.name}>
-  {memberData?.name || member.name}
-</Text>
+          <Text style={styles.name}>{member.name}</Text>
 
           <View
             style={[
@@ -105,11 +74,11 @@ const fetchMember = async () => {
           >
             <Text
               style={{
-                color:  memberData?.status? "#3DDB84" : "#FF3B30",
+                color: isActive ? "#3DDB84" : "#FF3B30",
                 fontSize: 12,
               }}
             >
-              {memberData?.status || member?.status}
+              {member.status}
             </Text>
           </View>
         </View>
@@ -149,11 +118,11 @@ const fetchMember = async () => {
     {/* CONTACT INFORMATION */}
     <Text style={styles.sectionTitle}>CONTACT INFORMATION</Text>
 
-    <InfoRow icon="mail-outline" label="Email" value={memberData?.email} />
-    <InfoRow icon="call-outline" label="Phone" value={memberData?.mobileNumber || member.phone}/>
-    <InfoRow icon="location-outline" label="Address" value={memberData?.address? memberData?.address:"NA"} />
-    <InfoRow icon="calendar-outline" label="Date of Birth" value={memberData?.dateOfBirth? new Date(memberData?.dateOfBirth).toLocaleDateString("en-GB"):" "}/>
-    <InfoRow icon="heart-outline" label="Emergency Contact" value={memberData?.mobileNumber} />
+    <InfoRow icon="mail-outline" label="Email" value="vikram.s@email.com" />
+    <InfoRow icon="call-outline" label="Phone" value={member.phone} />
+    <InfoRow icon="location-outline" label="Address" value="42, MG Road, Bangalore" />
+    <InfoRow icon="calendar-outline" label="Date of Birth" value="15 May 1990" />
+    <InfoRow icon="heart-outline" label="Emergency Contact" value="+91 98765 00000" />
   </View>
 )}
 
@@ -165,34 +134,24 @@ const fetchMember = async () => {
       <Text style={styles.planTitle}>Current Plan</Text>
 
       <View style={styles.activeBadge}>
-        <Text style={styles.activeText}>{memberData?.status}</Text>
+        <Text style={styles.activeText}>Active</Text>
       </View>
     </View>
 
     <View style={styles.planBox}>
-      <Text style={styles.planName}>
-  {memberData?.plan?.planName}
-</Text>
+      <Text style={styles.planName}>Annual Platinum</Text>
     </View>
 
     <View style={styles.dateRow}>
       
       <View style={styles.dateBox}>
         <Text style={styles.dateLabel}>Start Date</Text>
-        <Text style={styles.startDate}>
-  {memberData?.membershipStartDate
-    ? new Date(memberData.membershipStartDate).toLocaleDateString("en-GB")
-    : "-"}
-</Text>
+        <Text style={styles.startDate}>10 Jan 2024</Text>
       </View>
 
       <View style={styles.dateBox}>
         <Text style={styles.dateLabel}>End Date</Text>
-        <Text style={styles.endDate}>
-  {memberData?.membershipEndDate
-    ? new Date(memberData.membershipEndDate).toLocaleDateString("en-GB")
-    : "-"}
-</Text>
+        <Text style={styles.endDate}>09 Jan 2025</Text>
       </View>
 
     </View>
@@ -205,7 +164,7 @@ const fetchMember = async () => {
 
     <View style={styles.paymentCard}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.plan}>{memberData?.plan?.planName}</Text>
+        <Text style={styles.plan}>Annual Platinum</Text>
         <Text style={styles.date}>Date: 10 Jan 2024</Text>
       </View>
 
@@ -214,7 +173,7 @@ const fetchMember = async () => {
         <Text style={styles.shareText}>Share</Text>
       </View>
 
-      <Text style={styles.amount}>Amount: ₹{memberData?.planAmount}</Text>
+      <Text style={styles.amount}>Amount: ₹11000</Text>
     </View>
   </View>
   </>

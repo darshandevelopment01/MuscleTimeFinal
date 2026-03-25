@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -89,7 +90,8 @@ const handleLogin = async () => {
     }
 
     console.log("Login success:", data.user);
-
+    // ✅ SAVE TOKEN (IMPORTANT)
+    await AsyncStorage.setItem("token", data.token);
     // Navigate after login
     router.replace("/(tabs)/enquiry");
 

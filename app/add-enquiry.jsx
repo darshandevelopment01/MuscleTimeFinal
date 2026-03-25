@@ -1,19 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 export default function AddEnquiry() {
   const router = useRouter();
 
@@ -31,6 +31,103 @@ export default function AddEnquiry() {
   const handleChange = (key, value) => {
     setForm({ ...form, [key]: value });
   };
+
+ 
+const [branches, setBranches] = useState([]);
+
+const API_URL = "https://muscletime-backend.vercel.app/api";
+
+useEffect(() => {
+  fetchBranches();
+}, []);
+
+const fetchBranches = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    console.log("Token",token)
+    const res = await fetch(`${API_URL}/branches`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    console.log("Branches:", data);
+
+    // if (data.success) {
+    //   setBranches(data.data);
+    // } else {
+    //   console.log("Branch error:", data.message);
+    // }
+    if (Array.isArray(data)) {
+  setBranches(data);
+} else {
+  console.log("Unexpected response:", data);
+}
+
+  } catch (err) {
+    console.log("Branch fetch error:", err);
+  }
+};
+
+const handleSave = async () => {
+  try {
+    // ✅ VALIDATION
+    if (!form.fullName || !form.mobile || !form.email || !form.gender || !form.branch || !form.source) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    if (form.mobile.length !== 10) {
+      alert("Mobile number must be 10 digits");
+      return;
+    }
+
+    // ✅ GET TOKEN
+    const token = await AsyncStorage.getItem("token");
+
+    // ✅ PREPARE BODY
+    const body = {
+      name: form.fullName,
+      mobileNumber: form.mobile,
+      email: form.email,
+      gender: form.gender,
+      branch: form.branch, // ⚠️ must be ObjectId
+      source: form.source,
+      notes: form.notes,
+    };
+
+    console.log("Sending:", body);
+
+    const res = await fetch(`${API_URL}/enquiries`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    console.log("Response:", data);
+
+    if (!res.ok) {
+      alert(data.message || "Failed to create enquiry");
+      return;
+    }
+
+    alert("Enquiry created successfully ✅");
+
+    // ✅ GO BACK
+    router.back();
+
+  } catch (error) {
+    console.log(error);
+    alert("Something went wrong");
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
@@ -100,13 +197,35 @@ export default function AddEnquiry() {
             />
 
             <Text style={styles.label}>Branch *</Text>
-            <TextInput
+            {/* <TextInput
               placeholder="Select Branch"
               placeholderTextColor="#777"
               style={styles.input}
               value={form.branch}
               onChangeText={(text) => handleChange("branch", text)}
-            />
+            /> */}
+            {/* <Picker
+  selectedValue={form.branch}
+  onValueChange={(value) => handleChange("branch", value)}
+>
+  <Picker.Item label="Select Branch" value="" />
+  {branches.map((b) => (
+    <Picker.Item key={b._id} label={b.name} value={b._id} />
+  ))}
+</Picker> */}
+<View style={styles.pickerWrapper}>
+  <Picker
+    selectedValue={form.branch}
+    onValueChange={(value) => handleChange("branch", value)}
+    dropdownIconColor="#fff"
+    style={styles.picker}
+  >
+    <Picker.Item label="Select Branch" value="" />
+    {branches.map((b) => (
+      <Picker.Item key={b._id} label={b.name} value={b._id} />
+    ))}
+  </Picker>
+</View>
           </View>
 
           {/* ENQUIRY DETAILS */}
@@ -148,7 +267,7 @@ export default function AddEnquiry() {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn}>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
               <Text style={styles.saveText}>Save & Close</Text>
             </TouchableOpacity>
           </View>

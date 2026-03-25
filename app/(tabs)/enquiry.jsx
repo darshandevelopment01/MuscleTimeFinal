@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -12,10 +14,18 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 export default function Enquiry() {
+  const API_URL = "https://muscletime-backend.vercel.app/api";
+//   useEffect(() => {
+//   fetchEnquiries();
+// }, []);
+useFocusEffect(
+  useCallback(() => {
+    fetchEnquiries();
+  }, [])
+);
   const router = useRouter();
-
+  const [enquiries, setEnquiries] = useState([]);
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedSource, setSelectedSource] = useState("All");
@@ -24,6 +34,30 @@ export default function Enquiry() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
+  const fetchEnquiries = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const res = await fetch(`${API_URL}/enquiries`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    console.log("API RESPONSE:", data);
+
+    if (data.success) {
+      setEnquiries(data.data); // ✅ IMPORTANT
+    } else {
+      console.log("Error:", data.message);
+    }
+
+  } catch (err) {
+    console.log("Fetch error:", err);
+  }
+};
   const onStartDateChange = (event, selectedDate) => {
   setShowStartPicker(false);
   if (selectedDate) setStartDate(selectedDate);
@@ -40,83 +74,99 @@ const formatDate = (date) => {
   return `${day}/${month}/${year}`;
 };
 
-const filteredEnquiries = (enquiries || []).filter((item) => {
+// const filteredEnquiries = (enquiries || []).filter((item) => {
+//   const statusMatch =
+//     selectedStatus === "All" || item.status === selectedStatus;
+
+//   const sourceMatch =
+//     selectedSource === "All" || item.source === selectedSource;
+
+//   const dateMatch =
+//     (!startDate || new Date(item.date) >= startDate) &&
+//     (!endDate || new Date(item.date) <= endDate);
+
+//   return statusMatch && sourceMatch && dateMatch;
+// });
+
+  // const enquiries = [
+  //   {
+  //     id: 1,
+  //     name: "Priya Patel",
+  //     status: "pending",
+  //     interest: "Weight Loss Program",
+  //     phone: "+91 99887 65432",
+  //     date: "29 Jan, 10:30 AM",
+  //     source: "Walk-in",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Amit Kumar",
+  //     status: "pending",
+  //     interest: "Muscle Building",
+  //     phone: "+91 88776 54321",
+  //     date: "28 Jan, 02:00 PM",
+  //     source: "Social Media",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Sneha Reddy",
+  //     status: "pending",
+  //     interest: "Yoga Classes",
+  //     phone: "+91 77665 43210",
+  //     date: "27 Jan, 11:15 AM",
+  //     source: "Referral",
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "Rajesh Nair",
+  //     status: "confirmed",
+  //     interest: "General Fitness",
+  //     phone: "+91 66554 32109",
+  //     date: "29 Jan, 09:00 AM",
+  //     source: "Website",
+  //   },
+  // ];
+
+//   const filteredData = enquiries.filter((item) => {
+//     const statusMatch =
+//       selectedStatus === "All" ||
+//       item.status.toLowerCase() === selectedStatus.toLowerCase();
+
+//     const sourceMatch =
+//       selectedSource === "All" || item.source === selectedSource;
+
+//     const formatDate = (date) => {
+//   if (!date) return "";
+
+//   const day = ("0" + date.getDate()).slice(-2);
+//   const month = ("0" + (date.getMonth() + 1)).slice(-2);
+//   const year = date.getFullYear();
+
+//   return `${day}/${month}/${year}`;
+// };
+//     return statusMatch && sourceMatch;
+//   });
+const filteredData = enquiries.filter((item) => {
   const statusMatch =
-    selectedStatus === "All" || item.status === selectedStatus;
+    selectedStatus === "All" ||
+    item.status?.toLowerCase() === selectedStatus.toLowerCase();
 
   const sourceMatch =
     selectedSource === "All" || item.source === selectedSource;
 
-  const dateMatch =
-    (!startDate || new Date(item.date) >= startDate) &&
-    (!endDate || new Date(item.date) <= endDate);
-
-  return statusMatch && sourceMatch && dateMatch;
+  return statusMatch && sourceMatch;
 });
-
-  const enquiries = [
-    {
-      id: 1,
-      name: "Priya Patel",
-      status: "pending",
-      interest: "Weight Loss Program",
-      phone: "+91 99887 65432",
-      date: "29 Jan, 10:30 AM",
-      source: "Walk-in",
-    },
-    {
-      id: 2,
-      name: "Amit Kumar",
-      status: "pending",
-      interest: "Muscle Building",
-      phone: "+91 88776 54321",
-      date: "28 Jan, 02:00 PM",
-      source: "Social Media",
-    },
-    {
-      id: 3,
-      name: "Sneha Reddy",
-      status: "pending",
-      interest: "Yoga Classes",
-      phone: "+91 77665 43210",
-      date: "27 Jan, 11:15 AM",
-      source: "Referral",
-    },
-    {
-      id: 4,
-      name: "Rajesh Nair",
-      status: "confirmed",
-      interest: "General Fitness",
-      phone: "+91 66554 32109",
-      date: "29 Jan, 09:00 AM",
-      source: "Website",
-    },
-  ];
-
-  const filteredData = enquiries.filter((item) => {
-    const statusMatch =
-      selectedStatus === "All" ||
-      item.status.toLowerCase() === selectedStatus.toLowerCase();
-
-    const sourceMatch =
-      selectedSource === "All" || item.source === selectedSource;
-
-    const formatDate = (date) => {
-  if (!date) return "";
-
-  const day = ("0" + date.getDate()).slice(-2);
-  const month = ("0" + (date.getMonth() + 1)).slice(-2);
-  const year = date.getFullYear();
-
-  return `${day}/${month}/${year}`;
-};
-    return statusMatch && sourceMatch;
-  });
-
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push("/enquiry-details")}
+      onPress={() =>
+  router.push({
+    pathname: "/enquiry-details",
+    params: {
+      enquiry: JSON.stringify(item),
+    },
+  })
+}
     >
       <View style={styles.rowTop}>
         <Text style={styles.name}>{item.name}</Text>
@@ -133,17 +183,21 @@ const filteredEnquiries = (enquiries || []).filter((item) => {
         </View>
       </View>
 
-      <Text style={styles.interest}>{item.interest}</Text>
-
+      {/* <Text style={styles.interest}>{item.interest}</Text> */}
+      <Text style={styles.interest}>{item?.email}</Text>
       <View style={styles.rowBottom}>
         <View style={styles.phoneRow}>
           <Ionicons name="call-outline" size={14} color="#888" />
-          <Text style={styles.phone}>{item.phone}</Text>
+          {/* <Text style={styles.phone}>{item.phone}</Text> */}
+          <Text style={styles.phone}>{item.mobileNumber}</Text>
         </View>
 
         <View style={styles.phoneRow}>
           <Ionicons name="time-outline" size={14} color="#888" />
-          <Text style={styles.phone}>{item.date}</Text>
+          {/* <Text style={styles.phone}>{item.date}</Text> */}
+          <Text style={styles.phone}>
+  {new Date(item.createdAt).toLocaleDateString("en-GB")}
+</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -170,9 +224,15 @@ const filteredEnquiries = (enquiries || []).filter((item) => {
               <Ionicons name="funnel-outline" size={20} color="#fff" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.addBtn}>
+            {/* <TouchableOpacity style={styles.addBtn}>
               <Ionicons name="add" size={22} color="#000" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            <TouchableOpacity
+  style={styles.addBtn}
+  onPress={() => router.push("/add-enquiry")}
+>
+  <Ionicons name="add" size={22} color="#000" />
+</TouchableOpacity>
           </View>
         </View>
 
@@ -188,7 +248,7 @@ const filteredEnquiries = (enquiries || []).filter((item) => {
 
         <FlatList
           data={filteredData}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
         />

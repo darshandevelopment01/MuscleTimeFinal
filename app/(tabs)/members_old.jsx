@@ -1,34 +1,63 @@
 import {
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
 } from "react-native";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import {
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from "@expo/vector-icons";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-const API_URL = "https://muscletime-backend.vercel.app/api";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
+
+const members = [
+  {
+    id: "1",
+    name: "Vikram Singh",
+    status: "active",
+    phone: "+91 98765 11111",
+    plan: "Annual Platinum",
+    expiry: "Expires 09 Jan 2025",
+    initials: "VS",
+  },
+  {
+    id: "2",
+    name: "Ananya Gupta",
+    status: "active",
+    phone: "+91 98765 22222",
+    plan: "Quarterly Premium",
+    expiry: "Expires 31 Mar 2024",
+    initials: "AG",
+  },
+  {
+    id: "3",
+    name: "Karthik Menon",
+    status: "active",
+    phone: "+91 98765 33333",
+    plan: "Monthly Basic",
+    expiry: "Expires 14 Feb 2024",
+    initials: "KM",
+  },
+  {
+    id: "4",
+    name: "Deepika Rao",
+    status: "expired",
+    phone: "+91 98765 44444",
+    initials: "DR",
+  },
+];
+
 
 export default function MembersScreen() {
-  const { width } = useWindowDimensions();
-  const router = useRouter();
 
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { width } = useWindowDimensions();
 
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All");
@@ -39,162 +68,120 @@ export default function MembersScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
-  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
-    try {
-      setLoading(true);
-
-      const token = await AsyncStorage.getItem("token");
-
-      const response = await fetch(`${API_URL}/members`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log("API RESPONSE:", data);
-      if (data.success) {
-        setMembers(data.data);
-      }
-    } catch (err) {
-      console.log("Fetch members error:", err);
-    }
-
-    setLoading(false);
-  };
-
-  // FILTER + SEARCH
   const filteredMembers = members.filter((item) => {
-    const matchesSearch =
-      item.name?.toLowerCase().includes(search.toLowerCase()) ||
-      item.mobileNumber?.includes(search);
 
     const statusMatch =
       selectedStatus === "All" ||
-      item.status?.toLowerCase() === selectedStatus.toLowerCase();
+      item.status.toLowerCase() === selectedStatus.toLowerCase();
 
-    return matchesSearch && statusMatch;
+    return statusMatch;
+
   });
+
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
+
+      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Members</Text>
-          <Text style={styles.subtitle}>
-            {members.length} members
-          </Text>
+          <Text style={styles.subtitle}>{members.length} members</Text>
         </View>
 
         <TouchableOpacity onPress={() => setFilterVisible(true)}>
-          <MaterialCommunityIcons
-            name="filter-outline"
-            size={22}
-            color="#fff"
-          />
+          <MaterialCommunityIcons name="filter-outline" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* SEARCH */}
+      {/* Search */}
       <View style={styles.searchBox}>
         <Ionicons name="search-outline" size={18} color="#777" />
         <TextInput
-          placeholder="Search by name or phone..."
+          placeholder="Search by name, phone, or email..."
           placeholderTextColor="#777"
           style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
         />
       </View>
 
-      {/* LIST */}
-      {loading ? (
-        <Text style={{ color: "#fff", textAlign: "center" }}>
-          Loading members...
-        </Text>
-      ) : (
-        <FlatList
-          data={filteredMembers}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <MemberCard item={item} width={width} />
-          )}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        />
-      )}
+      {/* Members List */}
+      <FlatList
+        data={filteredMembers}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <MemberCard item={item} width={width} />
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      />
+
 
       {/* FILTER MODAL */}
+
       <Modal visible={filterVisible} transparent animationType="fade">
+
         <View style={styles.modalOverlay}>
+
           <View style={styles.modalContainer}>
+
             <Text style={styles.modalTitle}>Filter Members</Text>
+
+            {/* STATUS FILTER */}
 
             <Text style={styles.modalLabel}>Status</Text>
 
-            {["All", "Active", "Expired"].map((status) => (
+            {["All","Active","Expired","Inactive"].map((status) => (
+
               <TouchableOpacity
                 key={status}
                 style={[
                   styles.option,
-                  selectedStatus === status &&
-                    styles.selectedOption,
+                  selectedStatus === status && styles.selectedOption
                 ]}
-                onPress={() => setSelectedStatus(status)}
+                onPress={()=>setSelectedStatus(status)}
               >
                 <Text style={styles.optionText}>{status}</Text>
               </TouchableOpacity>
+
             ))}
 
+
             {/* DATE FILTER */}
+
             <Text style={styles.modalLabel}>Start Date</Text>
 
             <TouchableOpacity
               style={styles.dateInput}
-              onPress={() => setShowStartPicker(true)}
+              onPress={()=>setShowStartPicker(true)}
             >
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color="#aaa"
-              />
+              <Ionicons name="calendar-outline" size={18} color="#aaa"/>
               <Text style={styles.dateText}>
-                {startDate
-                  ? startDate.toLocaleDateString("en-GB")
-                  : "Select start date"}
+                {startDate ? startDate.toLocaleDateString("en-GB") : "Select start date"}
               </Text>
             </TouchableOpacity>
+
 
             <Text style={styles.modalLabel}>End Date</Text>
 
             <TouchableOpacity
               style={styles.dateInput}
-              onPress={() => setShowEndPicker(true)}
+              onPress={()=>setShowEndPicker(true)}
             >
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color="#aaa"
-              />
+              <Ionicons name="calendar-outline" size={18} color="#aaa"/>
               <Text style={styles.dateText}>
-                {endDate
-                  ? endDate.toLocaleDateString("en-GB")
-                  : "Select end date"}
+                {endDate ? endDate.toLocaleDateString("en-GB") : "Select end date"}
               </Text>
             </TouchableOpacity>
 
+
             {/* BUTTONS */}
+
             <View style={styles.filterButtonRow}>
+
               <TouchableOpacity
                 style={styles.clearBtn}
-                onPress={() => {
+                onPress={()=>{
                   setSelectedStatus("All");
                   setStartDate(null);
                   setEndDate(null);
@@ -205,23 +192,28 @@ export default function MembersScreen() {
 
               <TouchableOpacity
                 style={styles.applyBtn}
-                onPress={() => setFilterVisible(false)}
+                onPress={()=>setFilterVisible(false)}
               >
                 <Text style={styles.applyText}>Apply</Text>
               </TouchableOpacity>
+
             </View>
+
           </View>
         </View>
       </Modal>
 
+
       {/* DATE PICKERS */}
+
       {showStartPicker && (
         <DateTimePicker
           value={startDate || new Date()}
           mode="date"
-          onChange={(e, date) => {
+          display="default"
+          onChange={(e,date)=>{
             setShowStartPicker(false);
-            if (date) setStartDate(date);
+            if(date) setStartDate(date);
           }}
         />
       )}
@@ -230,28 +222,23 @@ export default function MembersScreen() {
         <DateTimePicker
           value={endDate || new Date()}
           mode="date"
-          onChange={(e, date) => {
+          display="default"
+          onChange={(e,date)=>{
             setShowEndPicker(false);
-            if (date) setEndDate(date);
+            if(date) setEndDate(date);
           }}
         />
       )}
+
     </View>
   );
 }
 
-/* MEMBER CARD */
 
 function MemberCard({ item, width }) {
+
   const router = useRouter();
-
   const isActive = item.status === "active";
-
-  const initials = item.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
 
   return (
     <TouchableOpacity
@@ -259,13 +246,14 @@ function MemberCard({ item, width }) {
       onPress={() =>
         router.push({
           pathname: "/member-details",
-          params: { id: item._id },
+          params: item,
         })
       }
     >
       <View style={styles.row}>
+
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
+          <Text style={styles.avatarText}>{item.initials}</Text>
         </View>
 
         <View style={{ flex: 1 }}>
@@ -275,21 +263,13 @@ function MemberCard({ item, width }) {
             <View
               style={[
                 styles.badge,
-                {
-                  backgroundColor: isActive
-                    ? "#123524"
-                    : "#3a1111",
-                },
+                { backgroundColor: isActive ? "#123524" : "#3a1111" },
               ]}
             >
               <Text
                 style={[
                   styles.badgeText,
-                  {
-                    color: isActive
-                      ? "#3DDB84"
-                      : "#FF3B30",
-                  },
+                  { color: isActive ? "#3DDB84" : "#FF3B30" },
                 ]}
               >
                 {item.status}
@@ -298,45 +278,26 @@ function MemberCard({ item, width }) {
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons
-              name="call-outline"
-              size={14}
-              color="#777"
-            />
-            <Text style={styles.infoText}>
-              {item.mobileNumber}
-            </Text>
+            <Ionicons name="call-outline" size={14} color="#777" />
+            <Text style={styles.infoText}>{item.phone}</Text>
           </View>
 
           {item.plan && (
             <View style={styles.infoRow}>
-              <MaterialIcons
-                name="work-outline"
-                size={14}
-                color="#FF9800"
-              />
+              <MaterialIcons name="work-outline" size={14} color="#FF9800" />
               <Text style={styles.planText}>
-                {item.plan?.planName}{" "}
-                <Text style={styles.expiry}>
-                  Expires{" "}
-                  {new Date(
-                    item.membershipEndDate
-                  ).toLocaleDateString("en-GB")}
-                </Text>
+                {item.plan} <Text style={styles.expiry}>{item.expiry}</Text>
               </Text>
             </View>
           )}
         </View>
 
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color="#555"
-        />
+        <Ionicons name="chevron-forward" size={18} color="#555" />
       </View>
     </TouchableOpacity>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -455,94 +416,94 @@ const styles = StyleSheet.create({
     color: "#777",
   },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    padding: 20,
-  },
+  modalOverlay:{
+flex:1,
+backgroundColor:"rgba(0,0,0,0.7)",
+justifyContent:"center",
+padding:20
+},
 
-  modalContainer: {
-    backgroundColor: "#111",
-    borderRadius: 16,
-    padding: 20,
-  },
+modalContainer:{
+backgroundColor:"#111",
+borderRadius:16,
+padding:20
+},
 
-  modalTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 15,
-  },
+modalTitle:{
+color:"#fff",
+fontSize:18,
+fontWeight:"600",
+marginBottom:15
+},
 
-  modalLabel: {
-    color: "#aaa",
-    fontSize: 13,
-    marginBottom: 6,
-    marginTop: 10,
-  },
+modalLabel:{
+color:"#aaa",
+fontSize:13,
+marginBottom:6,
+marginTop:10
+},
 
-  option: {
-    backgroundColor: "#1C1C1E",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
+option:{
+backgroundColor:"#1C1C1E",
+padding:12,
+borderRadius:10,
+marginBottom:8
+},
 
-  selectedOption: {
-    borderWidth: 1,
-    borderColor: "#FF9800",
-  },
+selectedOption:{
+borderWidth:1,
+borderColor:"#FF9800"
+},
 
-  optionText: {
-    color: "#fff",
-    fontSize: 14,
-  },
+optionText:{
+color:"#fff",
+fontSize:14
+},
 
-  dateInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#1C1C1E",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
+dateInput:{
+flexDirection:"row",
+alignItems:"center",
+gap:8,
+backgroundColor:"#1C1C1E",
+padding:12,
+borderRadius:10,
+marginBottom:10
+},
 
-  dateText: {
-    color: "#aaa",
-    fontSize: 13,
-  },
+dateText:{
+color:"#aaa",
+fontSize:13
+},
 
-  filterButtonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
+filterButtonRow:{
+flexDirection:"row",
+justifyContent:"space-between",
+marginTop:10
+},
 
-  clearBtn: {
-    backgroundColor: "#1C1C1E",
-    paddingVertical: 12,
-    borderRadius: 10,
-    width: "48%",
-    alignItems: "center",
-  },
+clearBtn:{
+backgroundColor:"#1C1C1E",
+paddingVertical:12,
+borderRadius:10,
+width:"48%",
+alignItems:"center"
+},
 
-  clearText: {
-    color: "#aaa",
-    fontWeight: "600",
-  },
+clearText:{
+color:"#aaa",
+fontWeight:"600"
+},
 
-  applyBtn: {
-    backgroundColor: "#FF9800",
-    paddingVertical: 12,
-    borderRadius: 10,
-    width: "48%",
-    alignItems: "center",
-  },
+applyBtn:{
+backgroundColor:"#FF9800",
+paddingVertical:12,
+borderRadius:10,
+width:"48%",
+alignItems:"center"
+},
 
-  applyText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
+applyText:{
+color:"#fff",
+fontWeight:"600"
+}
 });

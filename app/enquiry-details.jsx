@@ -1,24 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { BlurView } from "expo-blur";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 export default function EnquiryDetails() {
   const router = useRouter();
+  const { enquiry } = useLocalSearchParams();
 
+const enquiryData = enquiry ? JSON.parse(enquiry) : null;
   const [activeTab, setActiveTab] = useState("details");
   const [lostModalVisible, setLostModalVisible] = useState(false);
   const [followModalVisible, setFollowModalVisible] = useState(false);
@@ -30,7 +31,7 @@ export default function EnquiryDetails() {
 
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-
+  const status = enquiryData?.status?.toLowerCase();
   useEffect(() => {
     if (lostModalVisible || followModalVisible) {
       Animated.parallel([
@@ -87,19 +88,23 @@ export default function EnquiryDetails() {
         {activeTab === "details" && (
           <>
             <View style={styles.card}>
-              <Text style={styles.name}>Priya Patel</Text>
+              <Text style={styles.name}>
+  {enquiryData?.name || "No Name"}
+</Text>
 
               <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>pending</Text>
+                <Text style={styles.statusText}>
+  {enquiryData?.status || "unknown"}
+</Text>
               </View>
 
-              <InfoRow icon="call-outline" label="Phone" value="+91 99887 65432" />
-              <InfoRow icon="mail-outline" label="Email" value="priya@email.com" />
-              <InfoRow icon="pricetag-outline" label="Interest" value="Weight Loss Program" />
-              <InfoRow icon="chatbubble-outline" label="Notes" value="Interested in morning batch" />
+              <InfoRow icon="call-outline" label="Phone" value={enquiryData?.mobileNumber || "-"} />
+              <InfoRow icon="mail-outline" label="Email" value={enquiryData?.email || "-"} />
+              {/* <InfoRow icon="pricetag-outline" label="Interest" value="Weight Loss Program" /> */}
+              <InfoRow icon="chatbubble-outline" label="Notes" value={enquiryData?.notes|| "-"} />
             </View>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.convertBtn}
               onPress={() => router.push("/convert-member")}
             >
@@ -113,7 +118,35 @@ export default function EnquiryDetails() {
             >
               <Ionicons name="close-circle-outline" size={18} color="#FF3B30" />
               <Text style={styles.lostText}>Mark as Lost</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            {status !== "converted" && status !== "lost" && (
+  <>
+    {/* <TouchableOpacity
+      style={styles.convertBtn}
+      onPress={() => router.push("/convert-member")}
+    > */}
+    <TouchableOpacity
+      style={styles.convertBtn}
+      onPress={() => router.push({
+  pathname: "/convert-member",
+  params: {
+    enquiry: JSON.stringify(enquiryData), // 👈 pass full object
+  },
+})}
+    >
+      <Ionicons name="person-add-outline" size={18} color="#000" />
+      <Text style={styles.convertText}>Convert to Member</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={styles.lostBtn}
+      onPress={() => setLostModalVisible(true)}
+    >
+      <Ionicons name="close-circle-outline" size={18} color="#FF3B30" />
+      <Text style={styles.lostText}>Mark as Lost</Text>
+    </TouchableOpacity>
+  </>
+)}
           </>
         )}
 

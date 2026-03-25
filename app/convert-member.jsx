@@ -1,22 +1,23 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
-
 export default function ConvertMember() {
   const router = useRouter();
-
+  const { enquiry } = useLocalSearchParams();
+  const enquiryData = enquiry ? JSON.parse(enquiry) : null;
   const [form, setForm] = useState({
     category: "",
     plan: "",
@@ -26,7 +27,120 @@ export default function ConvertMember() {
     paymentReceived: "",
     paymentRemaining: "",
   });
+  const API_URL = "https://muscletime-backend.vercel.app/api";
 
+  // const handleConvert = async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem("token");
+
+  //     if (!form.category || !form.plan || !form.paymentReceived) {
+  //       alert("Fill required fields");
+  //       return;
+  //     }
+
+  //     const body = {
+  //       enquiryId: enquiryData._id,
+  //       planCategory: form.category,
+  //       plan: form.plan,
+  //       dob: form.dob,
+  //       gst: form.gst,
+  //       discount: form.discount,
+  //       paymentReceived: form.paymentReceived,
+  //       paymentRemaining: form.paymentRemaining,
+  //     };
+
+  //     console.log("Converting:", body);
+
+  //     const res = await fetch(`${API_URL}/member/convert`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify(body),
+  //     });
+
+  //     const text = await res.text();
+  //     console.log("RAW:", text);
+
+  //     let data;
+  //     try {
+  //       data = JSON.parse(text);
+  //     } catch {
+  //       alert("Session expired ❌");
+  //       return;
+  //     }
+
+  //     if (!res.ok) {
+  //       alert(data.message || "Conversion failed");
+  //       return;
+  //     }
+
+  //     alert("Converted to Member ✅");
+
+  //     router.replace("/members"); // or wherever
+
+  //   } catch (err) {
+  //     console.log(err);
+  //     alert("Something went wrong");
+  //   }
+  // };
+  const handleConvert = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    const body = {
+      name: enquiryData.name,
+      mobileNumber: enquiryData.mobileNumber,
+      email: enquiryData.email,
+      branch: enquiryData.branch._id,
+      plan: form.plan, // must be ObjectId ⚠️
+      membershipStartDate: new Date(),
+      paymentReceived: Number(form.paymentReceived),
+    };
+
+    console.log("Converting:", body);
+
+    const res = await fetch(`${API_URL}/member`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const text = await res.text(); // safer
+    console.log("RAW:", text);
+
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      alert(data.message);
+      return;
+    }
+
+    alert("Converted successfully ✅");
+
+    // ✅ IMPORTANT: update enquiry status
+    await fetch(`${API_URL}/enquiry/${enquiryData._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        status: "converted",
+      }),
+    });
+
+    router.back();
+
+  } catch (err) {
+    console.log(err);
+    alert("Conversion failed");
+  }
+};
   const handleChange = (key, value) => {
     setForm({ ...form, [key]: value });
   };
@@ -50,9 +164,12 @@ export default function ConvertMember() {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>ENQUIRY DETAILS</Text>
 
-            <Text style={styles.previewText}>Name: Darshan Development</Text>
+            {/* <Text style={styles.previewText}>Name: Darshan Development</Text>
             <Text style={styles.previewText}>Email: darshandevelopment01@gmail.com</Text>
-            <Text style={styles.previewText}>Mobile: 9876543210</Text>
+            <Text style={styles.previewText}>Mobile: 9876543210</Text> */}
+            <Text style={styles.previewText}>Name: {enquiryData?.name}</Text>
+            <Text style={styles.previewText}>Email: {enquiryData?.email}</Text>
+            <Text style={styles.previewText}>Mobile: {enquiryData?.mobileNumber}</Text>
           </View>
 
           {/* MEMBERSHIP DETAILS */}
@@ -148,7 +265,7 @@ export default function ConvertMember() {
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn}>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleConvert}>
               <Text style={styles.saveText}>Convert to Member</Text>
             </TouchableOpacity>
           </View>
